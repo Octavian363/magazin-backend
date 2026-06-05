@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magazinul Meu Online</title>
+    <style>
+        /* --- DESIGN ȘI INTREFAȚĂ VIZUALĂ (CSS) --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #1e1e2f;
+            color: white;
+            text-align: center;
+            padding: 2.5rem 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.6rem;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.8;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* --- GRID-UL PENTRU AFIȘAREA PRODUSELOR --- */
+        .produse-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2.5rem;
+            margin-top: 1.5rem;
+        }
+
+        /* --- STILIZARE CARD PRODUS --- */
+        .produs-card {
+            background: white;
+            border-radius: 14px;
+            padding: 1.8rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.04);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid #eef2f5;
+        }
+
+        .produs-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+        }
+
+        .produs-card h3 {
+            margin: 0 0 0.4rem 0;
+            font-size: 1.4rem;
+            color: #1e1e2f;
+        }
+
+        .produs-id {
+            color: #95a5a6;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .produs-pret {
+            font-size: 1.6rem;
+            color: #2ecc71;
+            font-weight: 700;
+            margin: 1.2rem 0;
+        }
+
+        .btn-cumpara {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+        }
+
+        .btn-cumpara:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-cumpara:active {
+            transform: scale(0.98);
+        }
+
+        /* STARE COLOANĂ MESAJ (ÎNCĂRCARE / EROARE) */
+        .stare-mesaj {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #7f8c8d;
+            grid-column: 1 / -1;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛍️ Orion Shop</h1>
+        <p>Produse încărcate în timp real din serverul nostru Express</p>
+    </header>
+
+    <div class="container">
+        <div id="lista-produse" class="produse-grid">
+            <div class="stare-mesaj">🔄 Se conectează la server și se încarcă produsele...</div>
+        </div>
+    </div>
+
+    <script>
+        // Folosim o rută relativă. Serverul știe singur să caute pe domeniul curent (ex: localhost sau railway)
+        const URL_API = "/api/produse";
+
+        async function aduProdusele() {
+            const container = document.getElementById('lista-produse');
+
+            try {
+                // Cerem array-ul de produse de la backend
+                const raspuns = await fetch(URL_API);
+                
+                if (!raspuns.ok) {
+                    throw new Error("Răspunsul serverului nu a fost valid.");
+                }
+
+                const produse = await raspuns.json();
+
+                // Ștergem mesajul de încărcare primar
+                container.innerHTML = "";
+
+                // Verificăm dacă baza sau lista e goală
+                if (produse.length === 0) {
+                    container.innerHTML = '<div class="stare-mesaj">Nu există produse pe stoc în acest moment.</div>';
+                    return;
+                }
+
+                // Generăm vizual fiecare produs în parte
+                produse.forEach(produs => {
+                    const card = document.createElement('div');
+                    card.className = 'produs-card';
+
+                    card.innerHTML = `
+                        <div>
+                            <span class="produs-id">PROD-#0${produs.id}</span>
+                            <h3>${produs.nume}</h3>
+                        </div>
+                        <div>
+                            <div class="produs-pret">${produs.pret} RON</div>
+                            <button class="btn-cumpara" onclick="trimiteAlerta('${produs.nume}')">Adaugă în coș</button>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error("Eroare la preluarea datelor:", error);
+                container.innerHTML = `
+                    <div class="stare-mesaj" style="color: #e74c3c; border: 2px dashed #e74c3c;">
+                        ❌ Eroare de conexiune la Backend!<br>
+                        <span style="color: #7f8c8d; font-size: 0.95rem; display: block; margin-top: 0.5rem;">
+                            Verifică dacă serverul pornit pe Railway rulează corect rutele API.
+                        </span>
+                    </div>
+                `;
+            }
+        }
+
+        // Funcția declanșată la apasarea butonului de cumpărare
+        function trimiteAlerta(numeProdus) {
+            alert(`🎉 Excelent! Produsul "${numeProdus}" a fost adăugat în coș.`);
+        }
+
+        // Rulăm codul imediat ce structura paginii s-a încărcat în browser
+        window.addEventListener('DOMContentLoaded', aduProdusele);
+    </script>
+</body>
+</html>
